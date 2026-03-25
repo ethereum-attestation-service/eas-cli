@@ -19,6 +19,10 @@ vi.mock('../../output.js', () => ({
   handleError: vi.fn(),
 }));
 
+vi.mock('../../validation.js', () => ({
+  validateBytes32: vi.fn(),
+}));
+
 import { schemaGetCommand } from '../../commands/schema-get.js';
 import { createReadOnlyEASClient } from '../../client.js';
 import { output } from '../../output.js';

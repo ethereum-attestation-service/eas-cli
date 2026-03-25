@@ -12,6 +12,10 @@ vi.mock('../../output.js', () => ({
   handleError: vi.fn(),
 }));
 
+vi.mock('../../validation.js', () => ({
+  validateBytes32: vi.fn(),
+}));
+
 import { querySchemaCommand } from '../../commands/query-schema.js';
 import { graphqlQuery, QUERIES } from '../../graphql.js';
 import { output, handleError } from '../../output.js';

@@ -7,21 +7,9 @@ import {
 } from '@ethereum-attestation-service/eas-sdk';
 import { createEASClient } from '../client.js';
 import { output, handleError } from '../output.js';
-
-const EASSCAN_HOSTS: Record<string, string> = {
-  ethereum: 'https://easscan.org',
-  sepolia: 'https://sepolia.easscan.org',
-  base: 'https://base.easscan.org',
-  'base-sepolia': 'https://base-sepolia.easscan.org',
-  optimism: 'https://optimism.easscan.org',
-  'optimism-sepolia': 'https://optimism-sepolia.easscan.org',
-  arbitrum: 'https://arbitrum.easscan.org',
-  'arbitrum-sepolia': 'https://arbitrum-sepolia.easscan.org',
-  polygon: 'https://polygon.easscan.org',
-  scroll: 'https://scroll.easscan.org',
-  linea: 'https://linea.easscan.org',
-  celo: 'https://celo.easscan.org',
-};
+import { resolveInput } from '../stdin.js';
+import { validateAddress, validateBytes32 } from '../validation.js';
+import { EASSCAN_URLS } from '../graphql.js';
 
 export const offchainAttestCommand = new Command('offchain-attest')
   .description('Create an off-chain attestation (signed but not submitted on-chain)')
@@ -36,11 +24,17 @@ export const offchainAttestCommand = new Command('offchain-attest')
   .option('--rpc-url <url>', 'Custom RPC URL')
   .action(async (opts) => {
     try {
+      validateBytes32(opts.schema, 'schema UID');
+      if (opts.recipient !== '0x0000000000000000000000000000000000000000') {
+        validateAddress(opts.recipient, 'recipient');
+      }
+
       const client = createEASClient(opts.chain, opts.rpcUrl);
 
+      const rawData = await resolveInput(opts.data);
       let dataItems;
       try {
-        dataItems = JSON.parse(opts.data);
+        dataItems = JSON.parse(rawData);
       } catch (e) {
         throw new Error(`Invalid JSON in --data: ${e instanceof Error ? e.message : e}`);
       }
@@ -65,7 +59,7 @@ export const offchainAttestCommand = new Command('offchain-attest')
 
       const pkg = { sig: attestation, signer: client.address };
       const urlPath = createOffchainURL(pkg);
-      const host = EASSCAN_HOSTS[opts.chain] || EASSCAN_HOSTS['ethereum'];
+      const host = EASSCAN_URLS[opts.chain] || EASSCAN_URLS['ethereum'];
       const offchainUrl = `${host}${urlPath}`;
 
       output({

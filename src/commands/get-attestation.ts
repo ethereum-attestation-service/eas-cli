@@ -2,15 +2,18 @@ import { Command } from 'commander';
 import { SchemaEncoder } from '@ethereum-attestation-service/eas-sdk';
 import { createReadOnlyEASClient } from '../client.js';
 import { output, handleError } from '../output.js';
+import { validateBytes32 } from '../validation.js';
 
 export const getAttestationCommand = new Command('get-attestation')
   .description('Get an attestation by UID')
   .requiredOption('-u, --uid <uid>', 'Attestation UID')
-  .option('--decode <schema>', 'Schema string to decode data (e.g. "uint256 score, string name")')
+  .option('--decode [schema]', 'Decode data using schema string, or pass without value to auto-fetch from chain')
   .option('-c, --chain <name>', 'Chain name', 'ethereum')
   .option('--rpc-url <url>', 'Custom RPC URL')
   .action(async (opts) => {
     try {
+      validateBytes32(opts.uid, 'attestation UID');
+
       const client = createReadOnlyEASClient(opts.chain, opts.rpcUrl);
       const attestation = await client.eas.getAttestation(opts.uid);
 
@@ -29,7 +32,14 @@ export const getAttestationCommand = new Command('get-attestation')
 
       if (opts.decode) {
         try {
-          const encoder = new SchemaEncoder(opts.decode);
+          let schemaString: string;
+          if (typeof opts.decode === 'string') {
+            schemaString = opts.decode;
+          } else {
+            const schemaRecord = await client.schemaRegistry.getSchema({ uid: attestation.schema });
+            schemaString = schemaRecord.schema;
+          }
+          const encoder = new SchemaEncoder(schemaString);
           const decoded = encoder.decodeData(attestation.data);
           result.decodedData = decoded.map((item) => ({
             name: item.name,

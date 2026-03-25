@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { setJsonMode } from './output.js';
+import { setJsonMode, output } from './output.js';
 import { listChains } from './chains.js';
 import { attestCommand } from './commands/attest.js';
 import { revokeCommand } from './commands/revoke.js';
@@ -13,6 +13,8 @@ import { querySchemaCommand } from './commands/query-schema.js';
 import { queryAttestationCommand } from './commands/query-attestation.js';
 import { queryAttestationsCommand } from './commands/query-attestations.js';
 import { querySchemasCommand } from './commands/query-schemas.js';
+import { multiRevokeCommand } from './commands/multi-revoke.js';
+import { multiTimestampCommand } from './commands/multi-timestamp.js';
 import { setKeyCommand } from './commands/set-key.js';
 import { clearKeyCommand } from './commands/clear-key.js';
 
@@ -21,11 +23,10 @@ const program = new Command();
 program
   .name('eas')
   .description('Ethereum Attestation Service CLI — create, revoke, and query attestations')
-  .version('0.1.0')
+  .version(process.env.CLI_VERSION || '0.0.0-dev')
   .option('--json', 'Output results as JSON (useful for agents and scripting)')
-  .hook('preAction', (thisCommand) => {
-    const opts = thisCommand.opts();
-    if (opts.json) {
+  .hook('preAction', (thisCommand, actionCommand) => {
+    if (thisCommand.opts().json || actionCommand.opts().json) {
       setJsonMode(true);
     }
   });
@@ -35,14 +36,16 @@ program.addCommand(attestCommand);
 program.addCommand(multiAttestCommand);
 program.addCommand(offchainAttestCommand);
 program.addCommand(revokeCommand);
+program.addCommand(multiRevokeCommand);
 program.addCommand(getAttestationCommand);
 
 // Schema commands
 program.addCommand(schemaRegisterCommand);
 program.addCommand(schemaGetCommand);
 
-// Timestamp command
+// Timestamp commands
 program.addCommand(timestampCommand);
+program.addCommand(multiTimestampCommand);
 
 // GraphQL query commands
 program.addCommand(querySchemaCommand);
@@ -60,10 +63,12 @@ program
   .description('List supported chains and their EAS contract addresses')
   .action(() => {
     const chains = listChains();
-    console.log('Supported chains:');
-    for (const chain of chains) {
-      console.log(`  - ${chain}`);
-    }
+    output({ success: true, data: { chains } });
   });
+
+// Add --json to every subcommand so it works regardless of position
+for (const cmd of program.commands) {
+  cmd.option('--json', 'Output results as JSON');
+}
 
 program.parse();

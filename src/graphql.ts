@@ -1,24 +1,28 @@
-const EASSCAN_GRAPHQL: Record<string, string> = {
-  ethereum: 'https://easscan.org/graphql',
-  sepolia: 'https://sepolia.easscan.org/graphql',
-  base: 'https://base.easscan.org/graphql',
-  'base-sepolia': 'https://base-sepolia.easscan.org/graphql',
-  optimism: 'https://optimism.easscan.org/graphql',
-  'optimism-sepolia': 'https://optimism-sepolia.easscan.org/graphql',
-  arbitrum: 'https://arbitrum.easscan.org/graphql',
-  'arbitrum-sepolia': 'https://arbitrum-sepolia.easscan.org/graphql',
-  polygon: 'https://polygon.easscan.org/graphql',
-  scroll: 'https://scroll.easscan.org/graphql',
-  linea: 'https://linea.easscan.org/graphql',
-  celo: 'https://celo.easscan.org/graphql',
+export const EASSCAN_URLS: Record<string, string> = {
+  ethereum: 'https://easscan.org',
+  sepolia: 'https://sepolia.easscan.org',
+  base: 'https://base.easscan.org',
+  'base-sepolia': 'https://base-sepolia.easscan.org',
+  optimism: 'https://optimism.easscan.org',
+  'optimism-sepolia': 'https://optimism-sepolia.easscan.org',
+  arbitrum: 'https://arbitrum.easscan.org',
+  'arbitrum-sepolia': 'https://arbitrum-sepolia.easscan.org',
+  polygon: 'https://polygon.easscan.org',
+  scroll: 'https://scroll.easscan.org',
+  linea: 'https://linea.easscan.org',
+  celo: 'https://celo.easscan.org',
 };
 
-export function getGraphQLEndpoint(chainName: string): string {
-  const endpoint = EASSCAN_GRAPHQL[chainName];
-  if (!endpoint) {
-    throw new Error(`No GraphQL endpoint for chain "${chainName}"`);
+export function getEASScanUrl(chainName: string): string {
+  const url = EASSCAN_URLS[chainName];
+  if (!url) {
+    throw new Error(`No EASScan URL for chain "${chainName}"`);
   }
-  return endpoint;
+  return url;
+}
+
+export function getGraphQLEndpoint(chainName: string): string {
+  return `${getEASScanUrl(chainName)}/graphql`;
 }
 
 export async function graphqlQuery(
@@ -78,10 +82,11 @@ export const QUERIES = {
     }
   `,
   getAttestationsBySchema: `
-    query GetAttestationsBySchema($schemaId: String!, $take: Int) {
+    query GetAttestationsBySchema($schemaId: String!, $take: Int, $skip: Int) {
       attestations(
         where: { schemaId: { equals: $schemaId } }
         take: $take
+        skip: $skip
         orderBy: [{ time: desc }]
       ) {
         id
@@ -95,10 +100,11 @@ export const QUERIES = {
     }
   `,
   getAttestationsByAttester: `
-    query GetAttestationsByAttester($attester: String!, $take: Int) {
+    query GetAttestationsByAttester($attester: String!, $take: Int, $skip: Int) {
       attestations(
         where: { attester: { equals: $attester } }
         take: $take
+        skip: $skip
         orderBy: [{ time: desc }]
       ) {
         id
@@ -112,10 +118,11 @@ export const QUERIES = {
     }
   `,
   getSchemata: `
-    query GetSchemata($creator: String, $take: Int) {
+    query GetSchemata($creator: String, $take: Int, $skip: Int) {
       schemata(
         where: { creator: { equals: $creator } }
         take: $take
+        skip: $skip
         orderBy: [{ time: desc }]
       ) {
         id

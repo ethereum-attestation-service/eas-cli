@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { ethers } from 'ethers';
 import { setStoredPrivateKey } from '../config.js';
+import { output, handleError } from '../output.js';
 
 export const setKeyCommand = new Command('set-key')
   .description('Store your private key in ~/.eas-cli for future use')
@@ -11,10 +12,8 @@ export const setKeyCommand = new Command('set-key')
     try {
       const wallet = new ethers.Wallet(normalized);
       setStoredPrivateKey(key);
-      console.log(`Private key stored successfully.`);
-      console.log(`Wallet address: ${wallet.address}`);
+      output({ success: true, data: { address: wallet.address } });
     } catch {
-      console.error('Error: Invalid private key format.');
-      process.exit(1);
+      handleError(new Error('Invalid private key format'));
     }
   });

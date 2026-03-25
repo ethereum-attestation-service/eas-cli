@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup';
+import pkg from './package.json';
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -11,6 +12,9 @@ export default defineConfig({
     '@ethereum-attestation-service/eas-contracts',
     '@ethereum-attestation-service/eas-contracts-legacy',
   ],
+  define: {
+    'process.env.CLI_VERSION': JSON.stringify(pkg.version),
+  },
   banner: {
     js: '#!/usr/bin/env node',
   },

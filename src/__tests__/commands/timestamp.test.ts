@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const mockWait = vi.fn().mockResolvedValue(1700000000n);
-const mockTimestamp = vi.fn().mockResolvedValue({ wait: mockWait });
+const mockEstimateGas = vi.fn().mockResolvedValue(25000n);
+const mockWait = vi.fn();
+const mockTx = { wait: mockWait, receipt: null as any, estimateGas: mockEstimateGas };
+const mockTimestamp = vi.fn().mockResolvedValue(mockTx);
 const mockClient = {
   eas: { timestamp: mockTimestamp },
 };
@@ -19,7 +21,13 @@ import { timestampCommand } from '../../commands/timestamp.js';
 import { output } from '../../output.js';
 
 describe('timestamp command', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockWait.mockImplementation(async () => {
+      mockTx.receipt = { hash: '0xtshash' };
+      return 1700000000n;
+    });
+  });
 
   async function runCommand(args: string[]) {
     await timestampCommand.parseAsync(['node', 'test', ...args]);
@@ -35,6 +43,7 @@ describe('timestamp command', () => {
       success: true,
       data: {
         timestamp: '1700000000',
+        txHash: '0xtshash',
         data: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
         chain: 'ethereum',
       },
@@ -54,5 +63,16 @@ describe('timestamp command', () => {
     const { createEASClient } = await import('../../client.js');
     await runCommand(['-d', '0x1234', '-c', 'base']);
     expect(createEASClient).toHaveBeenCalledWith('base', undefined);
+  });
+
+  it('estimates gas in dry-run mode without sending', async () => {
+    await runCommand(['-d', '0x1234', '--dry-run']);
+
+    expect(mockEstimateGas).toHaveBeenCalled();
+    expect(mockWait).not.toHaveBeenCalled();
+    expect(output).toHaveBeenCalledWith({
+      success: true,
+      data: { dryRun: true, estimatedGas: '25000', chain: 'ethereum' },
+    });
   });
 });

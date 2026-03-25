@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockGetAttestation = vi.fn();
+const mockGetSchema = vi.fn();
 const mockClient = {
   eas: { getAttestation: mockGetAttestation },
+  schemaRegistry: { getSchema: mockGetSchema },
 };
 
 vi.mock('../../client.js', () => ({
@@ -12,6 +14,10 @@ vi.mock('../../client.js', () => ({
 vi.mock('../../output.js', () => ({
   output: vi.fn(),
   handleError: vi.fn(),
+}));
+
+vi.mock('../../validation.js', () => ({
+  validateBytes32: vi.fn(),
 }));
 
 const mockDecodeData = vi.fn();
@@ -67,17 +73,43 @@ describe('get-attestation command', () => {
     });
   });
 
-  it('decodes data when --decode is provided', async () => {
+  it('decodes data when --decode is provided with schema string', async () => {
     mockDecodeData.mockReturnValue([
       { name: 'score', type: 'uint256', value: { value: 100n } },
     ]);
 
     await runCommand(['-u', '0xuid', '--decode', 'uint256 score']);
 
+    expect(mockGetSchema).not.toHaveBeenCalled();
     const outputCall = (output as any).mock.calls[0][0];
     expect(outputCall.data.decodedData).toEqual([
       { name: 'score', type: 'uint256', value: '100' },
     ]);
+  });
+
+  it('auto-fetches schema when --decode is passed without value', async () => {
+    mockGetSchema.mockResolvedValue({ schema: 'uint256 score', uid: '0xschema', resolver: '0x0', revocable: true });
+    mockDecodeData.mockReturnValue([
+      { name: 'score', type: 'uint256', value: { value: 42n } },
+    ]);
+
+    await runCommand(['-u', '0xuid', '--decode']);
+
+    expect(mockGetSchema).toHaveBeenCalledWith({ uid: '0xschema' });
+    const outputCall = (output as any).mock.calls[0][0];
+    expect(outputCall.data.decodedData).toEqual([
+      { name: 'score', type: 'uint256', value: '42' },
+    ]);
+  });
+
+  it('adds decodeError when auto-fetch schema fails', async () => {
+    mockGetSchema.mockRejectedValue(new Error('schema not found'));
+
+    await runCommand(['-u', '0xuid', '--decode']);
+
+    const outputCall = (output as any).mock.calls[0][0];
+    expect(outputCall.data.decodeError).toBe('schema not found');
+    expect(outputCall.data.decodedData).toBeUndefined();
   });
 
   it('converts bigint values to strings in decoded data', async () => {

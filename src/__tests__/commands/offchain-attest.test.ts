@@ -23,6 +23,23 @@ vi.mock('../../output.js', () => ({
   handleError: vi.fn(),
 }));
 
+vi.mock('../../stdin.js', () => ({
+  resolveInput: vi.fn((v: string) => Promise.resolve(v)),
+}));
+
+vi.mock('../../validation.js', () => ({
+  validateAddress: vi.fn(),
+  validateBytes32: vi.fn(),
+}));
+
+vi.mock('../../graphql.js', () => ({
+  EASSCAN_URLS: {
+    ethereum: 'https://easscan.org',
+    base: 'https://base.easscan.org',
+    sepolia: 'https://sepolia.easscan.org',
+  },
+}));
+
 const mockEncodeData = vi.fn().mockReturnValue('0xencoded');
 
 vi.mock('@ethereum-attestation-service/eas-sdk', () => ({

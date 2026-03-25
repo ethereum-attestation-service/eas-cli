@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const mockEstimateGas = vi.fn().mockResolvedValue(50000n);
 const mockWait = vi.fn();
-const mockMultiAttest = vi.fn().mockResolvedValue({ wait: mockWait });
+const mockTx = { wait: mockWait, receipt: null as any, estimateGas: mockEstimateGas };
+const mockMultiAttest = vi.fn().mockResolvedValue(mockTx);
 const mockClient = {
   eas: { multiAttest: mockMultiAttest },
   address: '0xAttester',
@@ -14,6 +16,10 @@ vi.mock('../../client.js', () => ({
 vi.mock('../../output.js', () => ({
   output: vi.fn(),
   handleError: vi.fn(),
+}));
+
+vi.mock('../../stdin.js', () => ({
+  resolveInput: vi.fn((v: string) => Promise.resolve(v)),
 }));
 
 const mockEncodeData = vi.fn().mockReturnValue('0xencoded');
@@ -32,7 +38,10 @@ import { output, handleError } from '../../output.js';
 describe('multi-attest command', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockWait.mockResolvedValue(['0xuid1', '0xuid2']);
+    mockWait.mockImplementation(async () => {
+      mockTx.receipt = { hash: '0xtxhash456' };
+      return ['0xuid1', '0xuid2'];
+    });
   });
 
   async function runCommand(args: string[]) {
@@ -55,9 +64,9 @@ describe('multi-attest command', () => {
         data: [
           expect.objectContaining({
             recipient: '0x0000000000000000000000000000000000000000',
-            expirationTime: 0n, // NO_EXPIRATION default
+            expirationTime: 0n,
             revocable: true,
-            refUID: '0x0000000000000000000000000000000000000000000000000000000000000000', // ZERO_BYTES32 default
+            refUID: '0x0000000000000000000000000000000000000000000000000000000000000000',
             data: '0xencoded',
             value: 0n,
           }),
@@ -122,7 +131,7 @@ describe('multi-attest command', () => {
     expect(err.message).toBe('tx failed');
   });
 
-  it('outputs uids and count on success', async () => {
+  it('outputs uids, count, and txHash on success', async () => {
     const input = JSON.stringify([
       { schema: '0xschema1', data: [{ name: 'x', type: 'uint8', value: '1' }] },
     ]);
@@ -134,8 +143,24 @@ describe('multi-attest command', () => {
       data: {
         uids: ['0xuid1', '0xuid2'],
         count: 2,
+        txHash: '0xtxhash456',
         chain: 'ethereum',
       },
+    });
+  });
+
+  it('estimates gas in dry-run mode without sending', async () => {
+    const input = JSON.stringify([
+      { schema: '0xschema1', data: [{ name: 'x', type: 'uint8', value: '1' }] },
+    ]);
+
+    await runCommand(['-i', input, '--dry-run']);
+
+    expect(mockEstimateGas).toHaveBeenCalled();
+    expect(mockWait).not.toHaveBeenCalled();
+    expect(output).toHaveBeenCalledWith({
+      success: true,
+      data: { dryRun: true, estimatedGas: '50000', chain: 'ethereum' },
     });
   });
 });

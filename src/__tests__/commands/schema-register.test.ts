@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const mockWait = vi.fn().mockResolvedValue('0xschemauid');
-const mockRegister = vi.fn().mockResolvedValue({ wait: mockWait });
+const mockEstimateGas = vi.fn().mockResolvedValue(45000n);
+const mockWait = vi.fn();
+const mockTx = { wait: mockWait, receipt: null as any, estimateGas: mockEstimateGas };
+const mockRegister = vi.fn().mockResolvedValue(mockTx);
 const mockClient = {
   schemaRegistry: { register: mockRegister },
 };
@@ -15,11 +17,21 @@ vi.mock('../../output.js', () => ({
   handleError: vi.fn(),
 }));
 
+vi.mock('../../validation.js', () => ({
+  validateAddress: vi.fn(),
+}));
+
 import { schemaRegisterCommand } from '../../commands/schema-register.js';
 import { output } from '../../output.js';
 
 describe('schema-register command', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockWait.mockImplementation(async () => {
+      mockTx.receipt = { hash: '0xreghash' };
+      return '0xschemauid';
+    });
+  });
 
   async function runCommand(args: string[]) {
     await schemaRegisterCommand.parseAsync(['node', 'test', ...args]);
@@ -37,6 +49,7 @@ describe('schema-register command', () => {
       success: true,
       data: {
         uid: '0xschemauid',
+        txHash: '0xreghash',
         schema: 'uint256 score, string name',
         resolver: '0x0000000000000000000000000000000000000000',
         revocable: true,
@@ -66,5 +79,16 @@ describe('schema-register command', () => {
     expect(mockRegister).toHaveBeenCalledWith(
       expect.objectContaining({ revocable: false })
     );
+  });
+
+  it('estimates gas in dry-run mode without sending', async () => {
+    await runCommand(['-s', 'uint8 x', '--dry-run']);
+
+    expect(mockEstimateGas).toHaveBeenCalled();
+    expect(mockWait).not.toHaveBeenCalled();
+    expect(output).toHaveBeenCalledWith({
+      success: true,
+      data: { dryRun: true, estimatedGas: '45000', chain: 'ethereum' },
+    });
   });
 });

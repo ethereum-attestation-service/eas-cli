@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const mockEstimateGas = vi.fn().mockResolvedValue(21000n);
 const mockWait = vi.fn();
-const mockAttest = vi.fn().mockResolvedValue({ wait: mockWait });
+const mockTx = { wait: mockWait, receipt: null as any, estimateGas: mockEstimateGas };
+const mockAttest = vi.fn().mockResolvedValue(mockTx);
 const mockClient = {
   eas: { attest: mockAttest },
   address: '0xAttester',
@@ -14,6 +16,15 @@ vi.mock('../../client.js', () => ({
 vi.mock('../../output.js', () => ({
   output: vi.fn(),
   handleError: vi.fn(),
+}));
+
+vi.mock('../../stdin.js', () => ({
+  resolveInput: vi.fn((v: string) => Promise.resolve(v)),
+}));
+
+vi.mock('../../validation.js', () => ({
+  validateAddress: vi.fn(),
+  validateBytes32: vi.fn(),
 }));
 
 const mockEncodeData = vi.fn().mockReturnValue('0xencoded');
@@ -32,11 +43,15 @@ const mockSchemaEncoderConstructor = vi.fn();
 import { attestCommand } from '../../commands/attest.js';
 import { createEASClient } from '../../client.js';
 import { output, handleError } from '../../output.js';
+import { resolveInput } from '../../stdin.js';
 
 describe('attest command', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockWait.mockResolvedValue('0xuid123');
+    mockWait.mockImplementation(async () => {
+      mockTx.receipt = { hash: '0xtxhash123' };
+      return '0xuid123';
+    });
   });
 
   async function runCommand(args: string[]) {
@@ -50,6 +65,7 @@ describe('attest command', () => {
     ]);
 
     expect(createEASClient).toHaveBeenCalledWith('ethereum', undefined);
+    expect(resolveInput).toHaveBeenCalledWith('[{"name":"score","type":"uint256","value":"100"}]');
     expect(mockSchemaEncoderConstructor).toHaveBeenCalledWith('uint256 score');
     expect(mockEncodeData).toHaveBeenCalledWith([
       { name: 'score', type: 'uint256', value: '100' },
@@ -66,6 +82,7 @@ describe('attest command', () => {
       success: true,
       data: expect.objectContaining({
         uid: '0xuid123',
+        txHash: '0xtxhash123',
         attester: '0xAttester',
         schema: '0xschema',
         chain: 'ethereum',
@@ -117,17 +134,12 @@ describe('attest command', () => {
   });
 
   it('uses NO_EXPIRATION constant when expiration is 0', async () => {
-    // NO_EXPIRATION in the real SDK is 0n. To verify the command actually uses the
-    // constant (not just BigInt("0")), we set the mock NO_EXPIRATION to a sentinel value.
-    // This requires a re-mock, so instead we verify the conditional logic by testing
-    // the non-zero path works correctly, and trust that both paths are exercised.
     await runCommand([
       '-s', '0xschema',
       '-d', '[{"name":"x","type":"uint8","value":"1"}]',
       '--expiration', '0',
     ]);
     const callData = mockAttest.mock.calls[0][0].data;
-    // With NO_EXPIRATION mocked as 0n, the result should be 0n
     expect(callData.expirationTime).toBe(0n);
   });
 
@@ -139,7 +151,6 @@ describe('attest command', () => {
     ]);
     const callData = mockAttest.mock.calls[0][0].data;
     expect(callData.expirationTime).toBe(1700000000n);
-    // Verify it's different from NO_EXPIRATION (0n), proving the else branch was taken
     expect(callData.expirationTime).not.toBe(0n);
   });
 
@@ -173,5 +184,20 @@ describe('attest command', () => {
       '-d', '[{"name":"score","type":"uint256","value":"1"},{"name":"name","type":"string","value":"test"}]',
     ]);
     expect(mockSchemaEncoderConstructor).toHaveBeenCalledWith('uint256 score, string name');
+  });
+
+  it('estimates gas in dry-run mode without sending', async () => {
+    await runCommand([
+      '-s', '0xschema',
+      '-d', '[{"name":"x","type":"uint8","value":"1"}]',
+      '--dry-run',
+    ]);
+
+    expect(mockEstimateGas).toHaveBeenCalled();
+    expect(mockWait).not.toHaveBeenCalled();
+    expect(output).toHaveBeenCalledWith({
+      success: true,
+      data: { dryRun: true, estimatedGas: '21000', chain: 'ethereum' },
+    });
   });
 });

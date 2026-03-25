@@ -13,6 +13,11 @@ vi.mock('../../output.js', () => ({
   handleError: vi.fn(),
 }));
 
+vi.mock('../../validation.js', () => ({
+  validateAddress: vi.fn(),
+  validateBytes32: vi.fn(),
+}));
+
 import { queryAttestationsCommand } from '../../commands/query-attestations.js';
 import { graphqlQuery, QUERIES } from '../../graphql.js';
 import { output, handleError } from '../../output.js';
@@ -24,7 +29,7 @@ describe('query-attestations command', () => {
     await queryAttestationsCommand.parseAsync(['node', 'test', ...args]);
   }
 
-  it('queries by schema', async () => {
+  it('queries by schema with default skip', async () => {
     (graphqlQuery as any).mockResolvedValue({
       attestations: [{ id: '0x1' }, { id: '0x2' }],
     });
@@ -34,6 +39,7 @@ describe('query-attestations command', () => {
     expect(graphqlQuery).toHaveBeenCalledWith('ethereum', QUERIES.getAttestationsBySchema, {
       schemaId: '0xschema',
       take: 10,
+      skip: 0,
     });
     expect(output).toHaveBeenCalledWith({
       success: true,
@@ -41,7 +47,7 @@ describe('query-attestations command', () => {
     });
   });
 
-  it('queries by attester', async () => {
+  it('queries by attester with default skip', async () => {
     (graphqlQuery as any).mockResolvedValue({
       attestations: [{ id: '0x1' }],
     });
@@ -51,7 +57,20 @@ describe('query-attestations command', () => {
     expect(graphqlQuery).toHaveBeenCalledWith('ethereum', QUERIES.getAttestationsByAttester, {
       attester: '0xAttester',
       take: 10,
+      skip: 0,
     });
+  });
+
+  it('passes skip for pagination', async () => {
+    (graphqlQuery as any).mockResolvedValue({ attestations: [] });
+
+    await runCommand(['-s', '0xschema', '--skip', '20']);
+
+    expect(graphqlQuery).toHaveBeenCalledWith(
+      'ethereum',
+      expect.any(String),
+      expect.objectContaining({ skip: 20 })
+    );
   });
 
   it('schema takes precedence when both provided', async () => {

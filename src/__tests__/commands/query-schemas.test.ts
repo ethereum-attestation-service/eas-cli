@@ -12,6 +12,10 @@ vi.mock('../../output.js', () => ({
   handleError: vi.fn(),
 }));
 
+vi.mock('../../validation.js', () => ({
+  validateAddress: vi.fn(),
+}));
+
 import { querySchemasCommand } from '../../commands/query-schemas.js';
 import { graphqlQuery, QUERIES } from '../../graphql.js';
 import { output } from '../../output.js';
@@ -23,7 +27,7 @@ describe('query-schemas command', () => {
     await querySchemasCommand.parseAsync(['node', 'test', ...args]);
   }
 
-  it('queries schemas by creator', async () => {
+  it('queries schemas by creator with default skip', async () => {
     (graphqlQuery as any).mockResolvedValue({
       schemata: [{ id: '0xs1', schema: 'uint256 x' }, { id: '0xs2', schema: 'string y' }],
     });
@@ -33,6 +37,7 @@ describe('query-schemas command', () => {
     expect(graphqlQuery).toHaveBeenCalledWith('ethereum', QUERIES.getSchemata, {
       creator: '0xCreator',
       take: 10,
+      skip: 0,
     });
     expect(output).toHaveBeenCalledWith({
       success: true,
@@ -49,6 +54,18 @@ describe('query-schemas command', () => {
       'ethereum',
       QUERIES.getSchemata,
       expect.objectContaining({ take: 50 })
+    );
+  });
+
+  it('passes skip for pagination', async () => {
+    (graphqlQuery as any).mockResolvedValue({ schemata: [] });
+
+    await runCommand(['-a', '0xCreator', '--skip', '15']);
+
+    expect(graphqlQuery).toHaveBeenCalledWith(
+      'ethereum',
+      QUERIES.getSchemata,
+      expect.objectContaining({ skip: 15 })
     );
   });
 

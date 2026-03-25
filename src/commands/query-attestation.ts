@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { graphqlQuery, QUERIES } from '../graphql.js';
 import { output, handleError } from '../output.js';
+import { validateBytes32 } from '../validation.js';
 
 export const queryAttestationCommand = new Command('query-attestation')
   .description('Query an attestation from the EAS GraphQL API')
@@ -8,6 +9,8 @@ export const queryAttestationCommand = new Command('query-attestation')
   .option('-c, --chain <name>', 'Chain name', 'ethereum')
   .action(async (opts) => {
     try {
+      validateBytes32(opts.uid, 'attestation UID');
+
       const data = await graphqlQuery(opts.chain, QUERIES.getAttestation, { id: opts.uid });
 
       if (!data.attestation) {

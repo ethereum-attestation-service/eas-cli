@@ -50,6 +50,12 @@ eas attest \
   --chain sepolia
 ```
 
+Supports reading data from stdin:
+
+```bash
+echo '[{"name":"score","type":"uint256","value":"100"}]' | eas attest --schema 0xSchemaUID --data - --chain sepolia
+```
+
 ### Create Multiple Attestations
 
 ```bash
@@ -77,13 +83,32 @@ eas revoke \
   --chain sepolia
 ```
 
+### Revoke Multiple Attestations
+
+```bash
+eas multi-revoke \
+  --input '[{"schema":"0xSchemaUID","uid":"0xUID1"},{"schema":"0xSchemaUID","uid":"0xUID2"}]' \
+  --chain sepolia
+```
+
 ### Get an Attestation
 
 ```bash
 eas get-attestation \
   --uid 0xAttestationUID \
-  --decode "uint256 score, string comment" \
   --chain sepolia
+```
+
+Auto-decode data by fetching the schema from chain:
+
+```bash
+eas get-attestation --uid 0xAttestationUID --decode --chain sepolia
+```
+
+Or decode with an explicit schema string:
+
+```bash
+eas get-attestation --uid 0xAttestationUID --decode "uint256 score, string comment" --chain sepolia
 ```
 
 ### Register a Schema
@@ -108,6 +133,33 @@ eas schema-get \
 eas timestamp \
   --data 0xBytes32Data \
   --chain sepolia
+```
+
+### Timestamp Multiple Data Items
+
+```bash
+eas multi-timestamp \
+  --data '["0xBytes32Data1","0xBytes32Data2"]' \
+  --chain sepolia
+```
+
+### Query Attestations (GraphQL)
+
+```bash
+# By schema UID
+eas query-attestations --schema 0xSchemaUID --chain sepolia
+
+# By attester address
+eas query-attestations --attester 0xAddress --chain sepolia
+
+# With pagination
+eas query-attestations --schema 0xSchemaUID --limit 20 --skip 40 --chain sepolia
+```
+
+### Query Schemas (GraphQL)
+
+```bash
+eas query-schemas --creator 0xAddress --limit 20 --skip 0 --chain sepolia
 ```
 
 ### Manage Private Key
@@ -135,10 +187,11 @@ eas chains
 
 ## Common Options (per command)
 
-| Option           | Description                    | Default      |
-|------------------|--------------------------------|--------------|
-| `-c, --chain`    | Target chain                   | `ethereum`   |
-| `--rpc-url`      | Custom RPC endpoint            | Chain default|
+| Option           | Description                                      | Default      |
+|------------------|--------------------------------------------------|--------------|
+| `-c, --chain`    | Target chain                                     | `ethereum`   |
+| `--rpc-url`      | Custom RPC endpoint                              | Chain default|
+| `--dry-run`      | Estimate gas without sending (write commands)    | —            |
 
 ## Supported Chains
 
@@ -149,7 +202,7 @@ Ethereum, Sepolia, Base, Base Sepolia, Optimism, Optimism Sepolia, Arbitrum, Arb
 Pass `--json` to any command to get structured JSON output. This is designed for agent integrations:
 
 ```bash
-eas get-attestation --uid 0x... --chain sepolia --json
+eas attest --schema 0x... --data '[...]' --chain sepolia --json
 ```
 
 Returns:
@@ -159,11 +212,11 @@ Returns:
   "success": true,
   "data": {
     "uid": "0x...",
-    "schema": "0x...",
+    "txHash": "0x...",
     "attester": "0x...",
     "recipient": "0x...",
-    "time": 1700000000,
-    "data": "0x..."
+    "schema": "0x...",
+    "chain": "sepolia"
   }
 }
 ```
@@ -175,6 +228,34 @@ On error:
   "success": false,
   "error": "Error message here"
 }
+```
+
+## Dry Run
+
+Pass `--dry-run` to any write command to estimate gas without sending a transaction:
+
+```bash
+eas attest --schema 0x... --data '[...]' --chain sepolia --dry-run --json
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "dryRun": true,
+    "estimatedGas": "21000",
+    "chain": "sepolia"
+  }
+}
+```
+
+## Stdin Support
+
+Commands that accept `--data` or `--input` can read from stdin by passing `-`:
+
+```bash
+cat attestation-data.json | eas attest --schema 0x... --data - --chain sepolia
+cat revocations.json | eas multi-revoke --input - --chain sepolia
 ```
 
 ## Agent Integration

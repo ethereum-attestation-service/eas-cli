@@ -16,7 +16,7 @@ describe('graphql module', () => {
     });
 
     it('throws for unknown chain', () => {
-      expect(() => getGraphQLEndpoint('unknown')).toThrow('No GraphQL endpoint for chain "unknown"');
+      expect(() => getGraphQLEndpoint('unknown')).toThrow('No EASScan URL for chain "unknown"');
     });
   });
 
@@ -96,7 +96,7 @@ describe('graphql module', () => {
 
     it('throws for unknown chain', async () => {
       await expect(graphqlQuery('unknown', 'query { test }')).rejects.toThrow(
-        'No GraphQL endpoint for chain "unknown"'
+        'No EASScan URL for chain "unknown"'
       );
     });
   });
