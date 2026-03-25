@@ -7,7 +7,7 @@ interface EASConfig {
 }
 
 export function getConfigPath(): string {
-  return join(homedir(), '.eas-cli');
+  return join(homedir(), '.easctl');
 }
 
 export function readConfig(): EASConfig {

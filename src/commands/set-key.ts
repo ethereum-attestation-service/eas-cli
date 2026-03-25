@@ -4,7 +4,7 @@ import { setStoredPrivateKey } from '../config.js';
 import { output, handleError } from '../output.js';
 
 export const setKeyCommand = new Command('set-key')
-  .description('Store your private key in ~/.eas-cli for future use')
+  .description('Store your private key in ~/.easctl for future use')
   .argument('<key>', 'Wallet private key (hex string, with or without 0x prefix)')
   .action((key: string) => {
     const normalized = key.startsWith('0x') ? key : `0x${key}`;

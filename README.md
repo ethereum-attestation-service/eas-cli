@@ -24,7 +24,7 @@ Store your private key for persistent use:
 easctl set-key 0xYourPrivateKeyHere
 ```
 
-This saves the key to `~/.eas-cli` (file permissions `0600`, owner-only) and displays your wallet address for confirmation.
+This saves the key to `~/.easctl` (file permissions `0600`, owner-only) and displays your wallet address for confirmation.
 
 To remove the stored key:
 

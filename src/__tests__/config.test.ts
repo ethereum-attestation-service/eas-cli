@@ -22,8 +22,8 @@ describe('config module', () => {
   beforeEach(() => vi.clearAllMocks());
 
   describe('getConfigPath', () => {
-    it('returns ~/.eas-cli', () => {
-      expect(getConfigPath()).toBe('/mock/home/.eas-cli');
+    it('returns ~/.easctl', () => {
+      expect(getConfigPath()).toBe('/mock/home/.easctl');
     });
   });
 
@@ -61,7 +61,7 @@ describe('config module', () => {
       vi.mocked(readFileSync).mockReturnValue('{}');
       setStoredPrivateKey('0xabc123');
       expect(writeFileSync).toHaveBeenCalledWith(
-        '/mock/home/.eas-cli',
+        '/mock/home/.easctl',
         JSON.stringify({ privateKey: '0xabc123' }, null, 2) + '\n',
         { mode: 0o600 },
       );
@@ -71,7 +71,7 @@ describe('config module', () => {
       vi.mocked(readFileSync).mockReturnValue('{}');
       setStoredPrivateKey('abc123');
       expect(writeFileSync).toHaveBeenCalledWith(
-        '/mock/home/.eas-cli',
+        '/mock/home/.easctl',
         JSON.stringify({ privateKey: '0xabc123' }, null, 2) + '\n',
         { mode: 0o600 },
       );
