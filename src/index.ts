@@ -18,6 +18,7 @@ import { multiTimestampCommand } from './commands/multi-timestamp.js';
 import { setKeyCommand } from './commands/set-key.js';
 import { clearKeyCommand } from './commands/clear-key.js';
 import { popularSchemasCommand } from './commands/popular-schemas.js';
+import { statusCommand } from './commands/status.js';
 
 const program = new Command();
 
@@ -58,6 +59,9 @@ program.addCommand(querySchemasCommand);
 // Key management commands
 program.addCommand(setKeyCommand);
 program.addCommand(clearKeyCommand);
+
+// Status command
+program.addCommand(statusCommand);
 
 // Chains command
 program
