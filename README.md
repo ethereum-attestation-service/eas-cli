@@ -2,7 +2,7 @@
 
 Command-line interface for the [Ethereum Attestation Service](https://attest.org). Built on [EAS SDK v2](https://github.com/ethereum-attestation-service/eas-sdk-v2) and [ethers](https://docs.ethers.org).
 
-All commands support `--json` for structured output and `--dry-run` for gas estimation without sending transactions.
+All commands support `--json` for structured output, `--dry-run` for gas estimation, and popular schema names (e.g. `--schema make-a-statement`) instead of raw UIDs.
 
 ## Installation
 
@@ -88,7 +88,23 @@ easctl schema-register --schema "uint256 score, string comment" --chain sepolia
 
 # Get a schema by UID (read-only)
 easctl schema-get --uid 0xSchemaUID --chain sepolia
+
+# Browse popular schemas
+easctl popular-schemas
+easctl popular-schemas --category social
+easctl popular-schemas --json
 ```
+
+#### Popular Schema Names
+
+Instead of raw UIDs, you can use popular schema names anywhere a schema UID is accepted:
+
+```bash
+easctl attest --schema make-a-statement --data '[{"name":"statement","type":"string","value":"Hello EAS"}]'
+easctl query-attestations --schema is-a-friend --chain base
+```
+
+Run `easctl popular-schemas` to see all available names.
 
 ### Timestamps
 
@@ -122,6 +138,10 @@ easctl query-schemas --creator 0xAddress --limit 20 --chain sepolia
 ### Utility
 
 ```bash
+# Show wallet, chain, and contract configuration
+easctl status
+easctl status --chain base
+
 # List supported chains
 easctl chains
 ```
