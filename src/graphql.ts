@@ -117,6 +117,24 @@ export const QUERIES = {
       }
     }
   `,
+  getAttestationsByRecipient: `
+    query GetAttestationsByRecipient($recipient: String!, $take: Int, $skip: Int) {
+      attestations(
+        where: { recipient: { equals: $recipient } }
+        take: $take
+        skip: $skip
+        orderBy: [{ time: desc }]
+      ) {
+        id
+        attester
+        schemaId
+        time
+        revoked
+        decodedDataJson
+        isOffchain
+      }
+    }
+  `,
   getSchemata: `
     query GetSchemata($take: Int, $skip: Int) {
       schemata(

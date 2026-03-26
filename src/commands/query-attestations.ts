@@ -7,16 +7,18 @@ export const queryAttestationsCommand = new Command('query-attestations')
   .description('Query attestations by schema or attester from the EAS GraphQL API')
   .option('-s, --schema <uid>', 'Filter by schema UID or popular schema name')
   .option('-a, --attester <address>', 'Filter by attester address')
+  .option('-r, --recipient <address>', 'Filter by recipient address')
   .option('-n, --limit <number>', 'Max results to return', '10')
   .option('--skip <number>', 'Number of results to skip (for pagination)', '0')
   .option('-c, --chain <name>', 'Chain name', 'ethereum')
   .action(async (opts) => {
     try {
-      if (!opts.schema && !opts.attester) {
-        throw new Error('Provide at least one filter: --schema or --attester');
+      if (!opts.schema && !opts.attester && !opts.recipient) {
+        throw new Error('Provide at least one filter: --schema, --attester, or --recipient');
       }
       if (opts.schema) opts.schema = resolveAndValidateSchemaUID(opts.schema, 'schema UID');
       if (opts.attester) validateAddress(opts.attester, 'attester');
+      if (opts.recipient) validateAddress(opts.recipient, 'recipient');
 
       const take = parseInt(opts.limit, 10);
       const skip = parseInt(opts.skip, 10);
@@ -30,9 +32,15 @@ export const queryAttestationsCommand = new Command('query-attestations')
           take,
           skip,
         });
-      } else {
+      } else if (opts.attester) {
         data = await graphqlQuery(opts.chain, QUERIES.getAttestationsByAttester, {
           attester: opts.attester,
+          take,
+          skip,
+        });
+      } else {
+        data = await graphqlQuery(opts.chain, QUERIES.getAttestationsByRecipient, {
+          recipient: opts.recipient,
           take,
           skip,
         });

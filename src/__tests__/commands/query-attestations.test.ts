@@ -5,6 +5,7 @@ vi.mock('../../graphql.js', () => ({
   QUERIES: {
     getAttestationsBySchema: 'query BySchema',
     getAttestationsByAttester: 'query ByAttester',
+    getAttestationsByRecipient: 'query ByRecipient',
   },
 }));
 
@@ -57,6 +58,20 @@ describe('query-attestations command', () => {
 
     expect(graphqlQuery).toHaveBeenCalledWith('ethereum', QUERIES.getAttestationsByAttester, {
       attester: '0xAttester',
+      take: 10,
+      skip: 0,
+    });
+  });
+
+  it('queries by recipient', async () => {
+    (graphqlQuery as any).mockResolvedValue({
+      attestations: [{ id: '0x1' }],
+    });
+
+    await runCommand(['-r', '0xRecipient']);
+
+    expect(graphqlQuery).toHaveBeenCalledWith('ethereum', QUERIES.getAttestationsByRecipient, {
+      recipient: '0xRecipient',
       take: 10,
       skip: 0,
     });

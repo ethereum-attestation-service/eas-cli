@@ -65,6 +65,16 @@ describe('GraphQL live queries (sepolia)', () => {
     expect(Array.isArray(data.attestations)).toBe(true);
   });
 
+  it('getAttestationsByRecipient returns attestations array', async () => {
+    const data = await graphqlQuery(chain, QUERIES.getAttestationsByRecipient, {
+      recipient: '0x0000000000000000000000000000000000000000',
+      take: 1,
+    });
+
+    expect(data.attestations).toBeDefined();
+    expect(Array.isArray(data.attestations)).toBe(true);
+  });
+
   it('getAttestation returns a single attestation with all expected fields', async () => {
     // First get a real attestation ID by querying recent attestations by a known schema
     // We use getSchemata to find a schema, then query its attestations
