@@ -1,6 +1,6 @@
 # easctl
 
-Command-line interface for the [Ethereum Attestation Service](https://attest.org). Built on [EAS SDK v2](https://github.com/ethereum-attestation-service/eas-sdk-v2) and [ethers](https://docs.ethers.org).
+Command-line interface for the [Ethereum Attestation Service](https://attest.org). Built on the [EAS SDK](https://github.com/ethereum-attestation-service/eas-sdk) and [ethers](https://docs.ethers.org).
 
 All commands support `--json` for structured output, `--dry-run` for gas estimation, and popular schema names (e.g. `--schema make-a-statement`) instead of raw UIDs.
 

@@ -1,0 +1,7 @@
+npm i -g easctl
+
+An EAS CLI with built-in schemas, JSON output for agent toolchains, and support for 12+ chains.
+
+AI agents are starting to operate onchain. For them to be useful, they need trust — identity, credentials, reputation, accountability.
+
+EAS attestations are the primitive for this. Signed, structured, onchain claims that anything in the ecosystem can verify.
