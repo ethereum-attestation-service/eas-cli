@@ -1,4 +1,4 @@
-# EAS CLI
+# easctl
 
 Command-line interface for the [Ethereum Attestation Service](https://attest.org). Built on [EAS SDK v2](https://github.com/ethereum-attestation-service/eas-sdk-v2) and [ethers](https://docs.ethers.org).
 
